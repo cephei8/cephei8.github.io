@@ -14,3 +14,7 @@ theme = "hugo-bearblog"
 
 [params]
   hideMadeWithLine = true
+
+[caches]
+  [caches.images]
+    dir = ':cacheDir/images'
