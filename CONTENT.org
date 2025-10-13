@@ -1,0 +1,26 @@
+#+hugo_base_dir: ./
+#+hugo_section: blog
+#+author: cephei8
+#+options: author:nil
+
+* Menu
+** COMMENT Home
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_WEIGHT: 1
+:EXPORT_HUGO_SECTION: /
+:EXPORT_FILE_NAME: _index
+:END:
+** Blog
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_WEIGHT: 2
+:EXPORT_FILE_NAME: _index
+:END:
+** Contact
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_WEIGHT: 3
+:EXPORT_HUGO_SECTION: /
+:EXPORT_FILE_NAME: contact
+:END:
