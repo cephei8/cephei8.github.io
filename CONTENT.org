@@ -1,26 +1,53 @@
 #+hugo_base_dir: ./
-#+hugo_section: blog
 #+author: cephei8
 #+options: author:nil
 
-* Menu
-** COMMENT Home
+* Projects
 :PROPERTIES:
 :EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_WEIGHT: 1
 :EXPORT_HUGO_SECTION: /
 :EXPORT_FILE_NAME: _index
 :END:
-** Blog
+
+** Projects
+*** Greener
+Project repository: [[https://github.com/cephei8/greener][greener]].
+
+**** Libraries for implementing reporters
+- Native library: [[https://github.com/cephei8/greener-reporter][greener-reporter]]
+- Python package: [[https://github.com/cephei8/greener-reporter-py][greener-reporter-py]] 
+- Node package: [[https://github.com/cephei8/greener-reporter-js][greener-reporter-js]] 
+
+**** Reporters
+- Pytest plugin: [[https://github.com/cephei8/pytest-greener][pytest-greener]] 
+- Jest reporter: [[https://github.com/cephei8/jest-greener][jest-greener]] 
+
+* Blog
 :PROPERTIES:
 :EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_WEIGHT: 2
+:EXPORT_HUGO_SECTION: blog
 :EXPORT_FILE_NAME: _index
 :END:
-** Contact
+
+* Contact
 :PROPERTIES:
 :EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_WEIGHT: 3
 :EXPORT_HUGO_SECTION: /
 :EXPORT_FILE_NAME: contact
 :END:
+
+** Contact
+- [[https://github.com/cephei8][GitHub]]
+
+* About this site
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_SECTION: /
+:EXPORT_FILE_NAME: about-this-site
+:END:
+
+** About this site
+This site was created using:
+- [[https://github.com/gohugoio/hugo][Hugo]] static site generator
+- [[https://github.com/janraasch/hugo-bearblog][Hugo ʕ•ᴥ•ʔ Bear Blog]] Hugo theme
+- [[https://github.com/kaushalmodi/ox-hugo][Ox-Hugo]] Org exporter backend for Hugo

@@ -1,9 +1,12 @@
 +++
 title = "Contact"
 draft = false
-weight = 3
 [menu]
   [menu.main]
-    weight = 2003
+    weight = 1003
     identifier = "contact"
 +++
+
+## Contact {#contact}
+
+-   [GitHub](https://github.com/cephei8)
