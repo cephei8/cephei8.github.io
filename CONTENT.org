@@ -2,11 +2,19 @@
 #+author: cephei8
 #+options: author:nil
 
+
+* Blog
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: _index
+:END:
+
 * Projects
 :PROPERTIES:
 :EXPORT_HUGO_MENU: :menu main
 :EXPORT_HUGO_SECTION: /
-:EXPORT_FILE_NAME: _index
+:EXPORT_FILE_NAME: projects
 :END:
 
 ** Projects
@@ -21,13 +29,6 @@ Project repository: [[https://github.com/cephei8/greener][greener]].
 **** Reporters
 - Pytest plugin: [[https://github.com/cephei8/pytest-greener][pytest-greener]] 
 - Jest reporter: [[https://github.com/cephei8/jest-greener][jest-greener]] 
-
-* Blog
-:PROPERTIES:
-:EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_SECTION: blog
-:EXPORT_FILE_NAME: _index
-:END:
 
 * Contact
 :PROPERTIES:
