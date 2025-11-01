@@ -2,6 +2,27 @@
 #+author: cephei8
 #+options: author:nil
 
+* Home
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_SECTION: /
+:EXPORT_FILE_NAME: _index
+:END:
+
+** About me
+I am a software engineer.
+
+** My work
+*** Greener
+I created [[https://cephei8.github.io/greener/][Greener]] - a platform for storing and viewing test results.
+
+Repositories/subprojects:
+- [[https://github.com/cephei8/greener][greener]] - main repository
+- [[https://github.com/cephei8/greener-reporter][greener-reporter]] - native library for implementing test reporters
+- [[https://github.com/cephei8/greener-reporter-py][greener-reporter-py]] - Python package for implementing test reporters
+- [[https://github.com/cephei8/greener-reporter-js][greener-reporter-js]] - JavaScript package for implementing test reporters
+- [[https://github.com/cephei8/pytest-greener][pytest-greener]] - pytest plugin
+- [[https://github.com/cephei8/jest-greener][jest-greener]] - Jest reporter
 
 * Blog
 :PROPERTIES:
@@ -9,26 +30,6 @@
 :EXPORT_HUGO_SECTION: blog
 :EXPORT_FILE_NAME: _index
 :END:
-
-* Projects
-:PROPERTIES:
-:EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_SECTION: /
-:EXPORT_FILE_NAME: projects
-:END:
-
-** Projects
-*** Greener
-Project repository: [[https://github.com/cephei8/greener][greener]].
-
-**** Libraries for implementing reporters
-- Native library: [[https://github.com/cephei8/greener-reporter][greener-reporter]]
-- Python package: [[https://github.com/cephei8/greener-reporter-py][greener-reporter-py]] 
-- Node package: [[https://github.com/cephei8/greener-reporter-js][greener-reporter-js]] 
-
-**** Reporters
-- Pytest plugin: [[https://github.com/cephei8/pytest-greener][pytest-greener]] 
-- Jest reporter: [[https://github.com/cephei8/jest-greener][jest-greener]] 
 
 * Contact
 :PROPERTIES:
