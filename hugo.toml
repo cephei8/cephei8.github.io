@@ -15,6 +15,11 @@ theme = "hugo-bearblog"
 [params]
   hideMadeWithLine = true
 
+[[menu.main]]
+  name = "RSS"
+  url = "/blog/index.xml"
+  weight = 1003.5
+
 [caches]
   [caches.images]
     dir = ':cacheDir/images'
