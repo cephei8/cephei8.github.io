@@ -77,14 +77,14 @@ It will allow finding traces for specific test cases and finding a test case for
     -   [pytest plugin](https://pypi.org/project/pytest-greener/)
     -   [Jest reporter](https://www.npmjs.com/package/jest-greener)
 -   Repositories
-    -   [Project](https://sr.ht/~cephei8/greener/)
-    -   [Native library for implementing test reporters](https://git.sr.ht/~cephei8/greener-reporter)
-    -   [Python package for implementing test reporters](https://git.sr.ht/~cephei8/greener-reporter-py)
-    -   [JavaScript package for implementing test reporters](https://git.sr.ht/~cephei8/greener-reporter-js)
-    -   [pytest plugin](https://git.sr.ht/~cephei8/pytest-greener)
-    -   [Jest reporter](https://git.sr.ht/~cephei8/jest-greener)
+    -   [Main repository](https://github.com/cephei8/greener)
+    -   [Native library for implementing test reporters](https://github.com/cephei8/greener-reporter)
+    -   [Python package for implementing test reporters](https://github.com/cephei8/greener-reporter-py)
+    -   [JavaScript package for implementing test reporters](https://github.com/cephei8/greener-reporter-js)
+    -   [pytest plugin](https://github.com/cephei8/pytest-greener)
+    -   [Jest reporter](https://github.com/cephei8/jest-greener)
 
 
 ## Feedback and contact information {#feedback-and-contact-information}
 
-Let me know your thoughts at [greener-discuss mailing list](https://lists.sr.ht/~cephei8/greener-discuss) or [Greener GitHub Discussions](https://github.com/cephei8/greener/discussions).
+Let me know your thoughts at [Greener GitHub Discussions](https://github.com/cephei8/greener/discussions).

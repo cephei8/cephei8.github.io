@@ -10,5 +10,4 @@ draft = false
 ## Contact {#contact}
 
 -   Email: [i@cephei8.dev](mailto:i@cephei8.dev)
--   SourceHut: [~cephei8](https://sr.ht/~cephei8/)
 -   GitHub: [cephei8](https://github.com/cephei8)

@@ -21,7 +21,7 @@
 Greener is a platform for storing and exploring test results.\\
 It is easy to configure and self-host, requires no changes to your tests and provides a simple query language to let you access the data you need.
 
-Check out [[https://sr.ht/~cephei8/greener/][project page]] or [[https://greener.cephei8.dev][documentation]] for details.
+Check out [[https://github.com/cephei8/greener][project page]] or [[https://greener.cephei8.dev][documentation]] for details.
 
 * Contact
 :PROPERTIES:
@@ -32,7 +32,6 @@ Check out [[https://sr.ht/~cephei8/greener/][project page]] or [[https://greener
 
 ** Contact
 - Email: [[mailto:i@cephei8.dev][i@cephei8.dev]]
-- SourceHut: [[https://sr.ht/~cephei8/][~cephei8]]
 - GitHub: [[https://github.com/cephei8][cephei8]]
 
 * About this site
@@ -115,12 +114,12 @@ It will allow finding traces for specific test cases and finding a test case for
   - [[https://pypi.org/project/pytest-greener/][pytest plugin]]
   - [[https://www.npmjs.com/package/jest-greener][Jest reporter]]
 - Repositories
-  - [[https://sr.ht/~cephei8/greener/][Project]]
-  - [[https://git.sr.ht/~cephei8/greener-reporter][Native library for implementing test reporters]]
-  - [[https://git.sr.ht/~cephei8/greener-reporter-py][Python package for implementing test reporters]]
-  - [[https://git.sr.ht/~cephei8/greener-reporter-js][JavaScript package for implementing test reporters]]
-  - [[https://git.sr.ht/~cephei8/pytest-greener][pytest plugin]]
-  - [[https://git.sr.ht/~cephei8/jest-greener][Jest reporter]]
+  - [[https://github.com/cephei8/greener][Main repository]]
+  - [[https://github.com/cephei8/greener-reporter][Native library for implementing test reporters]]
+  - [[https://github.com/cephei8/greener-reporter-py][Python package for implementing test reporters]]
+  - [[https://github.com/cephei8/greener-reporter-js][JavaScript package for implementing test reporters]]
+  - [[https://github.com/cephei8/pytest-greener][pytest plugin]]
+  - [[https://github.com/cephei8/jest-greener][Jest reporter]]
 
 *** Feedback and contact information
-Let me know your thoughts at [[https://lists.sr.ht/~cephei8/greener-discuss][greener-discuss mailing list]] or [[https://github.com/cephei8/greener/discussions][Greener GitHub Discussions]].
+Let me know your thoughts at [[https://github.com/cephei8/greener/discussions][Greener GitHub Discussions]].
