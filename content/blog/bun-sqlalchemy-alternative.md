@@ -1,90 +1,49 @@
-#+hugo_base_dir: ./
-#+author: cephei8
-#+options: author:nil
++++
+title = "Go's Bun ORM - alternative to Python's SQLAlchemy"
+date = 2026-01-02
+draft = false
++++
 
-* Blog
-:PROPERTIES:
-:EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_SECTION: blog
-:EXPORT_FILE_NAME: _index
-:END:
-
-* Projects
-:PROPERTIES:
-:EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_SECTION: /
-:EXPORT_FILE_NAME: projects
-:END:
-
-** Projects 
-*** Greener
-Greener is a lean and mean test result explorer.\\
-It is small (~27mb), easy to use, supports SQL-like query language and has plugins for various languages/frameworks.
-
-Check out [[https://github.com/cephei8/greener][main project repository]] or [[https://greener.cephei8.dev][documentation]] for details.
-
-* Contact
-:PROPERTIES:
-:EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_SECTION: /
-:EXPORT_FILE_NAME: contact
-:END:
-
-** Contact
-- Email: [[mailto:i@cephei8.dev][i@cephei8.dev]]
-- GitHub: [[https://github.com/cephei8][cephei8]]
-
-* About this site
-:PROPERTIES:
-:EXPORT_HUGO_MENU: :menu main
-:EXPORT_HUGO_SECTION: /
-:EXPORT_FILE_NAME: about-this-site
-:END:
-
-** About this site
-This site was created using:
-- [[https://github.com/gohugoio/hugo][Hugo]] static site generator
-- [[https://github.com/janraasch/hugo-bearblog][Hugo ʕ•ᴥ•ʔ Bear Blog]] Hugo theme
-- [[https://github.com/kaushalmodi/ox-hugo][Ox-Hugo]] Org exporter backend for Hugo
-
-* Blog posts
-** Go's Bun ORM - alternative to Python's SQLAlchemy
-:PROPERTIES:
-:EXPORT_HUGO_SECTION: blog
-:EXPORT_FILE_NAME: bun-sqlalchemy-alternative
-:EXPORT_DATE: 2026-01-02
-:END:
-
-Initially, my [[https://github.com/cephei8/greener][Greener]] project was implemented in Python.\\
+Initially, my [Greener](https://github.com/cephei8/greener) project was implemented in Python.<br />
 When I decided to switch to Go, I started looking for Go ORM library.
-In Python the de facto standard is [[https://www.sqlalchemy.org][SQLAlchemy]].
+In Python the de facto standard is [SQLAlchemy](https://www.sqlalchemy.org).
 I liked SQLAlchemy and was hoping to find something similar for Go.
 
 Specifically, I was looking for the following:
-1. Actively maintained
-2. Support for different databases (in the sense that same code works with different databases)
-3. ORM layer (for simple queries)
-4. SQL eDSL (for complex queries)
-5. Support for dynamic queries (e.g. variable set of query conditions etc.)
-6. Migration system
 
-I settled on [[https://bun.uptrace.dev][Bun]] - while not being as ergonomic as SQLAlchemy
+1.  Actively maintained
+2.  Support for different databases (in the sense that same code works with different databases)
+3.  ORM layer (for simple queries)
+4.  SQL eDSL (for complex queries)
+5.  Support for dynamic queries (e.g. variable set of query conditions etc.)
+6.  Migration system
+
+I settled on [Bun](https://bun.uptrace.dev) - while not being as ergonomic as SQLAlchemy
 (not Bun's fault, I think it's done a great job given the programming language)
 and not ticking all the boxes, it still covered the most important parts.
 
-*** Support for different databases
-The databases I wanted were SQLite, PostgreSQL and MySQL.\\
+
+## Support for different databases {#support-for-different-databases}
+
+The databases I wanted were SQLite, PostgreSQL and MySQL.<br />
 Bun supports all of them (and more), so I didn't look any further.
 
-*** ORM layer
+
+## ORM layer {#orm-layer}
+
 Defining models and using them for queries is simple and straightforward.
 
 The following code examples demonstrate common operations in Python's SQLAlchemy and Go's Bun.
 
-**** Code examples
-***** Defining models
+
+### Code examples {#code-examples}
+
+
+#### Defining models {#defining-models}
+
 Python:
-#+begin_src python
+
+```python
 class APIKey(Base):
     __tablename__ = "apikeys"
 
@@ -99,10 +58,11 @@ class APIKey(Base):
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     user: Mapped[User] = relationship(lazy="noload")
-#+end_src
+```
 
 Go:
-#+begin_src go
+
+```go
 type APIKey struct {
 	bun.BaseModel `bun:"table:apikeys"`
 
@@ -113,11 +73,14 @@ type APIKey struct {
 	CreatedAt   time.Time  `bun:"created_at,nullzero,notnull"`
 	UserID      BinaryUUID `bun:"user_id,notnull"`
 }
-#+end_src
+```
 
-***** Inserting data
+
+#### Inserting data {#inserting-data}
+
 Python:
-#+begin_src python
+
+```python
 api_key = APIKey(
     description="My API key",
     secret_salt=password_salt,
@@ -129,10 +92,11 @@ async_session_maker = async_sessionmaker(bind=db_engine)
 async with async_session_maker() as db_session:
     db_session.add(api_key)
     await db_session.commit()
-#+end_src
+```
 
 Go:
-#+begin_src go
+
+```go
 apiKey := &APIKey{
 	ID:          BinaryUUID(uuid.New()),
     Description: description,
@@ -146,11 +110,14 @@ _, err := db.NewInsert().Model(apiKey).Exec(ctx)
 if err != nil {
     return err
 }
-#+end_src
+```
 
-***** Fetching data
+
+#### Fetching data {#fetching-data}
+
 Python:
-#+begin_src python
+
+```python
 async_session_maker = async_sessionmaker(bind=db_engine)
 async with async_session_maker() as db_session:
     stmt = (
@@ -160,10 +127,11 @@ async with async_session_maker() as db_session:
     )
     result = await db_session.execute(stmt)
     api_keys = result.scalars().all()
-#+end_src
+```
 
 Go:
-#+begin_src go
+
+```go
 var apiKeys []APIKey
 
 err := db.NewSelect().
@@ -175,14 +143,17 @@ err := db.NewSelect().
 if err != nil {
     return err
 }
-#+end_src
+```
 
-**** Mapping types to database types
-Notice that my Go code uses `BinaryUUID` - it's needed to map UUID to binary on SQLite and MySQL.
-It can be implemented as follows (`Dialect` must be set beforehand e.g. on program start):
+
+### Mapping types to database types {#mapping-types-to-database-types}
+
+Notice that my Go code uses \`BinaryUUID\` - it's needed to map UUID to binary on SQLite and MySQL.
+It can be implemented as follows (\`Dialect\` must be set beforehand e.g. on program start):
 
 Go:
-#+begin_src go
+
+```go
 var Dialect schema.Dialect
 
 type BinaryUUID uuid.UUID
@@ -255,27 +226,28 @@ func (u BinaryUUID) String() string {
 func (u BinaryUUID) UUID() uuid.UUID {
 	return uuid.UUID(u)
 }
-#+end_src
+```
 
 SQLAlchemy also allows customizations, but I changed the UUID mapping to binary after the Go rewrite,
 so I don't have a hands-on example in Python.
 
 
+## SQL eDSL {#sql-edsl}
 
-*** SQL eDSL
-Greener supports query language that lets users do filtering and grouping.\\
+Greener supports query language that lets users do filtering and grouping.<br />
 That means that the underlying SQL query will have variable set of conditions and variable set of columns to group by.
 
 The queries that I needed to implement were not particularly complex, but they also needed the following:
-- CTEs (Common Table Expressions)
-- Window functions
 
+-   CTEs (Common Table Expressions)
+-   Window functions
 
-The following code snippets demonstrate building such a dynamic query in SQLAlchemy vs Bun.\\
+The following code snippets demonstrate building such a dynamic query in SQLAlchemy vs Bun.<br />
 Although the Go version may be slightly different than the Python version, the code snippets show how each framework "feels".
 
 Python:
-#+begin_src python
+
+```python
 select_columns = [
     c.label(la) for c, la in zip(group_columns, group_column_labels)
 ]
@@ -318,10 +290,11 @@ query = (
     .offset(offset)
     .limit(limit)
 )
-#+end_src
+```
 
 Go:
-#+begin_src go
+
+```go
 groupCols := []string{}
 orderCols := []string{}
 
@@ -414,101 +387,29 @@ mainQuery, err := applyOffsetLimit(mainQuery, queryAST)
 if err != nil {
 	return nil, err
 }
-#+end_src
+```
 
 Overall, Bun's eDSL is capable enough for more complex queries.
 
-*** Migration system
-SQLAlchemy together with [[https://alembic.sqlalchemy.org][Alembic]] make a great database migration tool.\\
-It provides many features (Alembic's goals are stated in its [[https://github.com/sqlalchemy/alembic][GitHub repository]]),
+
+## Migration system {#migration-system}
+
+SQLAlchemy together with [Alembic](https://alembic.sqlalchemy.org) make a great database migration tool.<br />
+It provides many features (Alembic's goals are stated in its [GitHub repository](https://github.com/sqlalchemy/alembic)),
 but the main one for me was the eDSL to have a single migration work with different databases.
 
-Unfortunately, Bun doesn't help here.\\
+Unfortunately, Bun doesn't help here.<br />
 There's eDSL, but it's required to write database-specific code (e.g. for database-specific types),
 whereas in Alembic you work with SQLAlchemy types, which then are automatically mapped to database types.
 
-I ended up using [[https://github.com/amacneil/dbmate][Dbmate]] with raw SQL migrations for each supported database.\\
+I ended up using [Dbmate](https://github.com/amacneil/dbmate) with raw SQL migrations for each supported database.<br />
 It's possible to do migrations in Bun, but for my use case there're no benefits using it comparing to raw SQL.
 
-*** Conclusion
+
+## Conclusion {#conclusion}
+
 Bun is a solid choice for a Go ORM with SQL eDSL support.
 
-It supports SQLite, PostreSQL, MySQL and more.\\
-ORM layer is easy to use, and eDSL can be used for more complex queries (supporting subqueries, CTEs, window functions).\\
+It supports SQLite, PostreSQL, MySQL and more.<br />
+ORM layer is easy to use, and eDSL can be used for more complex queries (supporting subqueries, CTEs, window functions).<br />
 The same application code (ORM layer or eDSL) can be used with different databases (e.g. depending on the database provided in runtime).
-
-** Greener: lean and mean test result explorer
-:PROPERTIES:
-:EXPORT_HUGO_SECTION: blog
-:EXPORT_FILE_NAME: introducing-greener
-:EXPORT_DATE: 2025-11-25
-:END:
-
-Test frameworks usually produce custom test output by default (along with exit code).\\
-For example, pytest (test framework for Python) gives something like this:
-#+begin_src
-tests/test_apikey_controller.py::test_create[db_sqlite] PASSED        [ 25%]
-tests/test_apikey_controller.py::test_get[db_sqlite] PASSED           [ 50%]
-tests/test_apikey_controller.py::test_list[db_sqlite] PASSED          [ 75%]
-tests/test_apikey_controller.py::test_delete[db_sqlite] PASSED        [100%]
-#+end_src
-
-This is fine if a number of tests is small, or we mostly care about overall test result - if all the tests in the test session passed.
-
-However, once we need to investigate test failure, especially for larger/longer test sessions (e.g. end-to-end tests), often the following questions need answers:
-- What are the other tests that failed? Did they fail because of the same reason?
-- How did this test behave over time? Is it flaky?
-- How to match applications logs with specific tests?
-
-It may be hard or not possible to answer these questions without additional infrastructure/tools.\\
-Normally, the following comes to help:
-- Export test results as JUnit XML and visualize the test results in the CI system being used (Jenkins, Azure DevOps etc.)
-- Export test results as JUnit XML, process and store them in database, and use Redash/Grafana for visualization
-- Instrument test framework to log additional details (e.g. start/end time), and then use the test log in addition to test results
-- Build ad-hoc solution that incorporates the previous points, and adds more convenience e.g. by adding each search for tests etc.
-
-The problem is that these additional infrastructure/tools require implementation, setup and maintenance, and that takes resources/focus from doing work that brings the actual value (like building a product).
-
-*** Introducing Greener
-[[https://greener.cephei8.dev][Greener]] is a platform for storing and viewing test results.
-
-It strives to:
-- Be a simple and focused tool
-- Be easy to integrate
-    - The platform is hosted as a Docker container that works with SQLite/PostgreSQL/MySQL
-    - Test framework plugins don't require code changes
-- Require "zero" setup and work out of the box
-- No "lock in" - switch to some other solution at any time (simply disable test framework plugins)
-- Enable further automation and/or advanced use cases via API
-- Bring simple but powerful query language
-   - Find specific tests by certain properties (name, session, custom labels)
-   - Group results
-- Enable adding custom metadata to test sessions and test cases (labels, arbitrary JSON)
-
-*** Motivational examples
-**** Track a subset of tests
-You can prepare a query to select a certain subset of tests and group the results by session.\\
-In this case you will be able to see how this specific subset of tests behaved over time.\\
-Additionally, group by label e.g. "target" label in case cross-platform builds.
-
-**** Match application logs to test results
-This example requires code changes, but it is can be powerful for end-to-end tests.\\
-The idea is to create OpenTelemetry trace context, and both store it in test case metadata and pass with requests to your API.\\
-It will allow finding traces for specific test cases and finding a test case for specific trace.
-
-*** Links
-- [[https://greener.cephei8.dev][Documentation]]
-- Packages
-  - [[https://hub.docker.com/r/cephei8/greener][Platform Docker image]]
-  - [[https://pypi.org/project/pytest-greener/][pytest plugin]]
-  - [[https://www.npmjs.com/package/jest-greener][Jest reporter]]
-- Repositories
-  - [[https://github.com/cephei8/greener][Main repository]]
-  - [[https://github.com/cephei8/greener-reporter][Native library for implementing test reporters]]
-  - [[https://github.com/cephei8/greener-reporter-py][Python package for implementing test reporters]]
-  - [[https://github.com/cephei8/greener-reporter-js][JavaScript package for implementing test reporters]]
-  - [[https://github.com/cephei8/pytest-greener][pytest plugin]]
-  - [[https://github.com/cephei8/jest-greener][Jest reporter]]
-
-*** Feedback and contact information
-Let me know your thoughts at [[https://github.com/cephei8/greener/discussions][Greener GitHub Discussions]].
