@@ -1,6 +1,7 @@
 +++
 title = "Greener: lean and mean test result explorer"
 date = 2025-11-25
+tags = ["Greener"]
 draft = false
 +++
 

@@ -1,6 +1,7 @@
 +++
 title = "Go's Bun ORM - alternative to Python's SQLAlchemy"
 date = 2026-01-02
+tags = ["Greener"]
 draft = false
 +++
 

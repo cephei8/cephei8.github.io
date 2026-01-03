@@ -48,7 +48,7 @@ This site was created using:
 - [[https://github.com/kaushalmodi/ox-hugo][Ox-Hugo]] Org exporter backend for Hugo
 
 * Blog posts
-** Go's Bun ORM - alternative to Python's SQLAlchemy
+** Go's Bun ORM - alternative to Python's SQLAlchemy :Greener:
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: blog
 :EXPORT_FILE_NAME: bun-sqlalchemy-alternative
@@ -437,7 +437,7 @@ It supports SQLite, PostreSQL, MySQL and more.\\
 ORM layer is easy to use, and eDSL can be used for more complex queries (supporting subqueries, CTEs, window functions).\\
 The same application code (ORM layer or eDSL) can be used with different databases (e.g. depending on the database provided in runtime).
 
-** Greener: lean and mean test result explorer
+** Greener: lean and mean test result explorer :Greener:
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: blog
 :EXPORT_FILE_NAME: introducing-greener
