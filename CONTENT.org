@@ -48,7 +48,267 @@ This site was created using:
 - [[https://github.com/kaushalmodi/ox-hugo][Ox-Hugo]] Org exporter backend for Hugo
 
 * Blog posts
-** Go's Bun ORM - alternative to Python's SQLAlchemy :Greener:
+** Don't be afraid of goyacc: making user-facing DSL for querying data :Greener:Go:
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: dont-be-afraid-goyacc
+:EXPORT_DATE: 2026-02-02
+:END:
+
+One of the core features of my [[https://github.com/cephei8/greener][Greener]] project is user-facing DSL for querying database with test results.\\
+For example, =status = "fail" AND name = "login_test"= fetches results of the "login_test" test that failed.
+
+Surprisingly, Go's port of classic YACC parser generator was a relatively simple and straightforward way to parse user queries to further convert them in SQL queries.
+
+Note: this post covers a very simplified approach for educational purposes.
+
+*** Goal
+The goal is to turn this:
+#+begin_src
+status = "fail" AND name = "login_test"
+#+end_src
+
+Into this:
+#+begin_src sql
+SELECT * FROM testcases WHERE status = 'fail' AND name = 'login_test'
+#+end_src
+
+The workflow consists of:
+1. Tokenizing query string
+2. Parsing tokens into abstract syntax tree (AST)
+3. Generating SQL from AST
+
+However, the the problem will be approached in a slightly different order:
+1. Define AST
+2. Write goyacc grammar
+3. Implement lexer (tokenizer)
+4. Generate parser using goyacc
+5. Generate SQL from AST
+
+*** Implementation 
+**** Define AST
+The AST represents the structure of the parsed query.\\
+For out simple DSL we need just several types:
+
+#+begin_src go
+type Query struct {
+	Condition Condition
+}
+
+type Condition any
+
+type FieldCondition struct {
+	Field string
+	Value string
+}
+
+type AndCondition struct {
+	Left  Condition
+	Right Condition
+}
+#+end_src
+
+=FieldCondition= represents =field = "value"=.\\
+=AndCondition= combines two conditions with =AND=.\\
+=Condition= is either =FieldCondition= or =AndCondition= (unfortunately Go doesn't have sum types; we could make it an interface, but for the sake of this example =any= would also work fine).
+
+For example, =status = "fail" AND name = "login_test"= becomes:
+#+begin_src
+           AndCondition
+              /     \
+  FieldCondition    FieldCondition
+  (status="fail")   (name="login_test")
+#+end_src
+
+**** Write goyacc grammar
+The grammar defines what valid queries look like:
+#+begin_src text
+%{
+package main
+%}
+
+%union {
+    str       string
+    condition Condition
+}
+
+%token <str> tokIDENT tokSTRING
+%token tokAND tokEQ
+
+%type <condition> query condition term
+
+%left tokAND
+
+%%
+
+query:
+    condition
+    {
+        yylex.(*lexer).result = &Query{Condition: $1}
+    }
+
+condition:
+    condition tokAND term
+    {
+        $$ = &AndCondition{Left: $1, Right: $3}
+    }
+    | term
+    {
+        $$ = $1
+    }
+
+term:
+    tokIDENT tokEQ tokSTRING
+    {
+        $$ = &FieldCondition{Field: $1, Value: $3}
+    }
+
+%%
+#+end_src
+
+To break it down:
+- =%union= defines what data types tokens and rules can carry. =str= is a string value, =condition= is AST node.
+- =%token= declares terminal symbols (tokens from the lexer). =<str>= means these tokens carry strings.
+- =%type= declares what type each grammar rule produces.
+- =%left tokAND= sets AND as left-associative (=a AND b AND c= groups as =(a AND b) AND c=).
+- The =%%...%%=  section contains the grammar rules. Each rule has a pattern and Go code in braces that builds AST nodes.
+  - =$1=, =$3= refer to matched elements by position, =$$= is the rule's output.
+
+**** Implement lexer (tokenizer)
+
+The lexer breaks input into tokens.\\
+It must implement the following interface:
+#+begin_src go
+type yyLexer interface {
+	Lex(lval *yySymType) int
+	Error(s string)
+}
+#+end_src
+
+Simple lexer can look like the following:
+#+begin_src go
+type lexer struct {
+	input  string
+	pos    int
+	result *Query
+	err    error
+}
+
+func newLexer(input string) *lexer {
+	return &lexer{input: input}
+}
+
+func (l *lexer) Lex(lval *yySymType) int {
+	for l.pos < len(l.input) && (l.input[l.pos] == ' ' || l.input[l.pos] == '\t') {
+		l.pos++
+	}
+
+	if l.pos >= len(l.input) {
+		return 0 // EOF
+	}
+
+	if l.input[l.pos] == '=' {
+		l.pos++
+		return tokEQ
+	}
+
+	if l.input[l.pos] == '"' {
+		l.pos++ // skip opening quote
+		start := l.pos
+		for l.pos < len(l.input) && l.input[l.pos] != '"' {
+			l.pos++
+		}
+		lval.str = l.input[start:l.pos]
+		l.pos++ // skip closing quote
+		return tokSTRING
+	}
+
+	isAlpha := func(c byte) bool {
+		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+	}
+
+	if isAlpha(l.input[l.pos]) {
+		start := l.pos
+		for l.pos < len(l.input) && (isAlpha(l.input[l.pos]) || l.input[l.pos] == '_') {
+			l.pos++
+		}
+		word := l.input[start:l.pos]
+
+		if strings.ToUpper(word) == "AND" {
+			return tokAND
+		}
+		lval.str = word
+		return tokIDENT
+	}
+
+	l.pos++
+	return 0
+}
+
+func (l *lexer) Error(s string) {
+	l.err = fmt.Errorf("parse error: %s", s)
+}
+#+end_src
+
+The lexer recognizes tokens defined in the grammar.\\
+If a token carries data (string), it is stored in =lval.str=.
+
+**** Generate parser using goyacc
+Run =goyacc= to generate the parser (the grammar was stored in =query.y=):
+#+begin_src sh
+goyacc -o parser.go query.y
+#+end_src
+
+For convenience, =Parse= function can be defined to call =yyParse= from the generated parser:
+#+begin_src go
+func Parse(input string) (*Query, error) {
+	l := newLexer(input)
+	yyParse(l)
+	if l.err != nil {
+		return nil, l.err
+	}
+	return l.result, nil
+}
+#+end_src
+
+**** Generate SQL from AST
+
+Finally, traverse the AST to build SQL:
+#+begin_src go
+func BuildSQL(q *Query, table string) (string, []any) {
+	whereClause, args := toSQL(q.Condition)
+	return fmt.Sprintf("SELECT * FROM %s WHERE %s", table, whereClause), args
+}
+
+func toSQL(c Condition) (string, []any) {
+	switch v := c.(type) {
+	case *FieldCondition:
+		return fmt.Sprintf("%s = ?", v.Field), []any{v.Value}
+	case *AndCondition:
+		leftSQL, leftArgs := toSQL(v.Left)
+		rightSQL, rightArgs := toSQL(v.Right)
+		return fmt.Sprintf("(%s AND %s)", leftSQL, rightSQL), append(leftArgs, rightArgs...)
+	default:
+		return "", nil
+	}
+}
+#+end_src
+
+Putting it all together:
+#+begin_src go
+query, _ := Parse(`status = "fail" AND name = "login_test"`)
+sql, args := BuildSQL(query, "testcases")
+// sql:  "SELECT * FROM testcases WHERE (status = ? AND name = ?)"
+// args: ["fail", "login_test"]
+#+end_src
+
+*** Conclusion
+Goyacc is likely sufficient for typical parsing needs. It is relatively easy to use, and (importantly) comes as a "standard" tool in Go ecosystem.
+
+In several hundreds lines of code it is possible to implemeted simple DSL for querying database data.\\
+Although for such a simple task it is likely and overkill, the solution scales well for more complicated queries (see [[https://github.com/cephei8/greener][Greener]] codebase for more complex DSL implementation).
+
+** Go's Bun ORM - alternative to Python's SQLAlchemy :Go:Greener:
 :PROPERTIES:
 :EXPORT_HUGO_SECTION: blog
 :EXPORT_FILE_NAME: bun-sqlalchemy-alternative
