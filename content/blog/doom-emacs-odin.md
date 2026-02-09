@@ -46,6 +46,8 @@ Add the following to `config.el`:
 
 Syncronize your config with Doom Emacs (`doom sync`).
 
+Now, run `M-x treesit-install-language-grammar` and select `odin` from the list of grammars.
+
 
 ## LSP {#lsp}
 
@@ -87,7 +89,7 @@ To have a correct compile command (that may include various build options) the c
 
 Create `justfile`:
 
-```nil
+```plain
 # justfile
 
 default: build
@@ -393,7 +395,7 @@ def __lldb_init_module(debugger, internal_dict):
 It will extend lldb to properly format strings, dynamic arrays and slices (more types can be added e.g. maps etc.).<br />
 For example, in the debugger you will see:
 
-```nil
+```plain
 + some_string "some_string" string
 - some_array len=3, cap=8 [dynamic]string
   + [0] "one" string
@@ -406,7 +408,7 @@ For example, in the debugger you will see:
 
 instead of
 
-```nil
+```plain
 - some_string string @ 0x16fdfe140 string
   + data 0x0000000100127ef4 "some_string" u8 *
     len 11 int
@@ -424,7 +426,7 @@ instead of
     len 2 int
 ```
 
-The summaries (the most top level rows) are much more usefull, and arrays/slices have all the elements displayed instead of just the first one.
+The summaries (the most top level rows) are much more useful, and arrays/slices have all the elements displayed instead of just the first one.
 
 
 ## Conclusion {#conclusion}
