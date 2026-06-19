@@ -1,0 +1,16 @@
+image: alpine/edge
+oauth: pages.sr.ht/PAGES:RW
+packages:
+  - hut
+  - hugo
+  - go
+tasks:
+  - build: |
+      cd website
+      hugo mod get -u
+      hugo --gc --minify
+  - package: |
+      cd website/public
+      tar -cvz . > site.tar.gz
+  - upload: |
+      hut pages publish -d cephei8.dev website/public/site.tar.gz

@@ -1,0 +1,1571 @@
+#+hugo_base_dir: ./
+#+author: cephei8
+#+options: author:nil
+
+* Blog
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: _index
+:END:
+
+* Contact
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_SECTION: /
+:EXPORT_FILE_NAME: contact
+:END:
+
+** Contact
+- GitHub: [[https://github.com/cephei8/][cephei8]]
+
+* About this site
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_SECTION: /
+:EXPORT_FILE_NAME: about-this-site
+:END:
+
+** About this site
+The content of this site is licensed under the terms of [[https://creativecommons.org/licenses/by/4.0/][CC BY 4.0]].
+
+This site was created using:
+- [[https://github.com/gohugoio/hugo][Hugo]] static site generator
+- [[https://github.com/janraasch/hugo-bearblog][Hugo ʕ•ᴥ•ʔ Bear Blog]] Hugo theme
+- [[https://github.com/kaushalmodi/ox-hugo][Ox-Hugo]] Org exporter backend for Hugo
+
+* Blog posts
+** Neovim setup for Odin :Odin:
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: neovim-odin
+:EXPORT_DATE: 2026-05-14
+:END:
+
+Recently I have been experimenting with Neovim.\\
+This post is about how to set it up for Odin programming.
+
+I will cover:
+- syntax highlighting
+- building/testing/formatting Odin code from Neovim
+- LSP
+- autocomplete
+- debugging
+
+*** Prerequisites
+- Install [[https://odin-lang.org][Odin]]
+- Install [[https://github.com/DanielGavin/ols][ols and odinfmt]] (LSP + formatting)
+- Install =tree-sitter-cli= (for installing Odin Tree-sitter grammar)
+- Install latest llvm and make sure lldb-dap is accessible (for debugging)
+- Set up [[https://github.com/folke/lazy.nvim][lazy.nvim]]
+
+*** Syntax highlighting
+I recommend using Tree-sitter for syntax highlighting.
+
+For Odin syntax highlighting, Odin grammar should be installed.\\
+The simplest way is to use [[https://github.com/nvim-treesitter/nvim-treesitter][nvim-treesitter]].
+
+Add nvim-treesitter to lazy.nvim plugins and install it:
+#+begin_src lua
+ {
+     "nvim-treesitter/nvim-treesitter",
+     lazy = false,
+     build = ":TSUpdate",
+     opts = {},
+     config = function()
+         vim.api.nvim_create_autocmd("FileType", {
+             pattern = "odin",
+             callback = function()
+                 vim.treesitter.start()
+             end,
+         })
+     end,
+ }
+#+end_src
+
+Then execute =:TSIntall odin=.
+
+*** Building/testing/formatting
+I have a plugin for this: [[https://github.com/cephei8/odin.nvim][odin.nvim]].
+
+Add it to lazy.nvim and install it:
+#+begin_src lua
+{
+    "cephei8/odin.nvim",
+    lazy = false,
+    opts = {},
+}
+#+end_src
+
+Now it will be possible to build/test/format from Neovim, e.g. execute =:Odin build=.
+
+**** Per-project command overrides
+:PROPERTIES:
+:CUSTOM_ID: per-project-command-overrides
+:END:
+=:Odin build= does =odin build .= from the project root directory (by default detected to be the one containing ~.git~ or ~ols.json~).
+
+It will likely be necessary to customize the build command on per-project basis - e.g. you may want to build with =odin build . -debug= etc.\\
+For this purpose, build command can be overriden using per-project ~.nvim.lua~ file - Neovim will detect and load it, and overrides can be done there.
+
+So,\\
+(1) add =vim.opt.exrc = true= to your config (e.g. ~init.lua~), so that Neovim will load ~.nvim.lua~\\
+(2) create ~.nvim.lua~ file in your project root\\
+(3) add the following to ~.nvim.lua~ file:
+#+begin_src lua
+require("odin").setup({
+    commands = {
+        build = { "odin", "build", ".", "-debug" },
+    },
+})
+#+end_src
+
+For convenience, I create keybindings for build/test commands (this goes to ~init.lua~):
+#+begin_src lua
+vim.keymap.set("n", "<leader>ob", "<cmd>Odin build<cr>", { desc = "Odin build" })
+vim.keymap.set("n", "<leader>ot", "<cmd>Odin test<cr>", { desc = "Odin test" })
+#+end_src
+
+**** Alternative to using odin.nvim
+Before I created [[https://github.com/cephei8/odin.nvim][odin.nvim]], I used [[https://github.com/stevearc/overseer.nvim][overseer.nvim]].\\
+It is possible to create a custom task that runs build, parses output and redirects errors to quickfix list.
+
+For running build/test tasks it is basically the same, it is just that overseer.nvim is a generic task runner, whereas odin.nvim is a purpose-build plugin.
+
+*** LSP
+Setting up =ols= (language server for Odin) is simple with [[https://github.com/neovim/nvim-lspconfig][nvim-lspconfig]].\\
+Add it to lazy.nvim and install it:
+#+begin_src lua
+{ 
+    "neovim/nvim-lspconfig",
+    config = function() 
+        vim.lsp.enable("ols")
+    end
+}
+#+end_src
+
+I use the default Neovim keybindings for LSP, except that I also define the following ones:
+#+begin_src lua
+vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "LSP definition" })
+vim.keymap.set("n", "gD", vim.lsp.buf.declaration, { desc = "LSP declaration" })
+vim.keymap.set({ "n", "v" }, "grf", function()
+    vim.lsp.buf.format({ async = true })
+end, { desc = "LSP format" })
+#+end_src
+
+*** Autocomplete 
+[[https://github.com/Saghen/blink.cmp][blink.cmp]] is a good completion plugin.
+
+Add it to lazy.nvim and install it:
+#+begin_src lua
+{
+    "saghen/blink.cmp",
+    dependencies = {},
+    version = "1.*",
+    opts = {
+        keymap = { preset = "default" },
+        appearance = {
+            nerd_font_variant = "mono",
+        },
+        completion = { documentation = { auto_show = false } },
+        sources = {
+            default = { "lsp", "path", "snippets", "buffer" },
+        },
+        fuzzy = { implementation = "prefer_rust_with_warning" },
+    },
+    opts_extend = { "sources.default" },
+}
+#+end_src
+
+To make it work with LSP, modify the =nvim-lspconfig= lazy.nvim plugin entry:
+#+begin_src lua
+{
+    "neovim/nvim-lspconfig",
+    opts = {
+        servers = {
+            ols = {},
+        },
+    },
+    config = function(_, opts)
+        for server, config in pairs(opts.servers) do
+            config.capabilities = require("blink.cmp").get_lsp_capabilities(config.capabilities)
+            vim.lsp.config(server, config)
+            vim.lsp.enable(server)
+        end
+    end,
+}
+#+end_src
+
+*** Debugging
+First of all, install =nvim-dap= and =nvim-dap-ui= (lazy.nvim):
+#+begin_src lua
+{ "mfussenegger/nvim-dap" },
+{ "rcarriga/nvim-dap-ui", dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" } },
+#+end_src
+
+Set up dap-ui and create keybindings for convenience (in ~init.lua~):
+#+begin_src lua
+local dap = require("dap")
+vim.keymap.set("n", "<leader>dc", dap.continue, { desc = "DAP continue" })
+vim.keymap.set("n", "<leader>db", dap.toggle_breakpoint, { desc = "DAP toggle breakpoint" })
+vim.keymap.set("n", "<leader>dB", dap.set_breakpoint, { desc = "DAP set breakpoint" })
+vim.keymap.set("n", "<leader>di", dap.step_into, { desc = "DAP step into" })
+vim.keymap.set("n", "<leader>do", dap.step_over, { desc = "DAP step over" })
+vim.keymap.set("n", "<leader>dO", dap.step_out, { desc = "DAP step out" })
+vim.keymap.set("n", "<leader>dt", dap.terminate, { desc = "DAP terminate" })
+vim.keymap.set("n", "<leader>dp", dap.pause, { desc = "DAP pause" })
+
+local dapui = require("dapui")
+dapui.setup()
+dap.listeners.before.event_initialized.dapui_config = function() dapui.open() end
+dap.listeners.before.event_terminated.dapui_config = function() dapui.close() end
+dap.listeners.before.event_exited.dapui_config = function() dapui.close() end
+
+vim.keymap.set("n", "<leader>du", dapui.toggle, { desc = "DAP UI toggle" })
+vim.keymap.set({ "n", "v" }, "<leader>de", dapui.eval, { desc = "DAP UI eval" })
+#+end_src
+
+Now, in project's ~.nvim.lua~ add debug configuration (~.nvim.lua~ file was explained in [[#per-project-command-overrides][Per-project command overrides]] section):
+#+begin_src lua
+local dap = require("dap")
+local lldb_dap = vim.fn.exepath("lldb-dap")
+
+dap.adapters.lldb = {
+	  type = "executable",
+	  command = lldb_dap,
+}
+dap.configurations.odin = {
+	  {
+		    type = "lldb",
+		    request = "launch",
+		    name = "Odin Debug",
+		    program = root .. "/app",
+		    cwd = root,
+		    args = {},
+		    stopOnEntry = false,
+		    preRunCommands = {
+			      "command script import " .. root .. "/dev-util/odin_lldb.py",
+		    },
+	  },
+}
+#+end_src
+
+Note that the configuration uses =dev-util/odin_lldb.py= from the project root - it adds LLDB formatter for Odin types (slices, strings etc.).\\
+It is optional but recommended, as it improves debugging experience.\\
+The formatters were described in [[#lldb-formatters][LLDB formatters]] section from [[#doom-emacs-odin][Doom Emacs setup for Odin]] post.
+
+Start debugging by executing =:DapContinue=.
+
+*** Conclusion
+Enjoy Odin programming in Neovim!
+
+** My Large Array of Things in Odin :Odin:
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: large-array-odin
+:EXPORT_DATE: 2026-04-05
+:END:
+
+*** Background
+If you are not familiar with the concept of Large Array of Things, I highly recommend watching [[https://youtu.be/ShSGHb65f3M?si=yp0go2e1-pHUlJCY][Avoiding Modern C++ | Anton Mikhailov]] on Wookash Podcast, both for educational purposes and for inspiration.\\
+In two words - it's an array of fat structs, with intrusive data structures to implement hierarchies.
+
+In this post I will show my implementation of the concept in Odin, demonstrating some nice features that Odin has to offer.
+Particularly:
+- Structure of Arrays (SoA)
+- Intrusive list
+- Fixed size dynamic array
+
+*** Design
+There were certain design decisions made that influenced the implementation:
+- There must be no dynamic allocations
+- Handles to the array elements must be stable, in the sense that it is possible to tell if the handle is still valid
+- I wanted to use standard library as much as possible
+- I wanted to explore an idea of using pointer-based handles instead of the index-based handles
+
+**** Index-based vs pointer-based handles 
+The Large Array of Things, as presented by Anton on the Wookash podcast, relied on using indexes of elements in the array.\\
+For example, ~first_child_idx~ and ~next_sibling_idx~ are both indexes to other elements in the array.
+
+In my case, I wanted to use Odin's ~core:container/intrusive/list~ instead of implementing my own intrusive list.\\
+Since using it will give me pointers to elements (e.g. when iterating), I decided to explore the idea of using pointer-based handles in general.\\
+It's not without tradeoffs though - I'll describe them further in the post.
+
+*** Implementation
+**** Entity and its handle
+Entity (our fat struct) must contain generation (~_gen~) to be able to uniquely identify itself - this is needed for the cases where the entity is reused (still same pointer/index, but now it's a different entity).\\
+Additionally, *generation is used to determine if the entity is in use: odd generation means the entity is in use, even generation means it is free and ready for reuse*.
+
+The hierarchical relationship is build on top of Odin's ~core:container/intrusive/list~.
+
+#+begin_src odin
+import "core:container/intrusive/list"
+
+Entity_Kind :: enum {
+	Nil,
+	Inventory,
+	Item,
+}
+
+Entity :: struct {
+	_gen:       Entity_Gen,
+    
+	kind:       Entity_Kind,
+	pos:        [2]u32,
+
+    group:      list.List,
+	group_node: list.Node,
+}
+#+end_src
+
+Entity handle (~Entity_Ref~) is simply a pointer + generation (generation at the moment when the handle was created).\\
+Checking if the handle is still valid is as simple as comparing the generation from the pointer (might have been already updated) to the memoized generation.
+
+#+begin_src odin
+Entity_Gen :: u32
+
+Entity_Ref :: struct {
+	ptr:  Entity_Ptr,
+	_gen: Entity_Gen,
+}
+
+entity_ref_valid :: proc(r: Entity_Ref) -> bool {
+	return r.ptr._gen == r._gen && r._gen % 2 == 1
+}
+#+end_src
+
+
+Similarly, generation is used to check if the entity should be skipped when iteration over the pool entities:
+#+begin_src odin 
+entity_skip :: proc(e: Entity_Ptr) -> bool {
+	return e._gen % 2 == 0
+}
+#+end_src
+
+**** Entity pool
+Entity pool is implemented as a SoA array of entities and an array of free entities:
+
+#+begin_src odin
+Entity_Pool :: struct {
+	entities:       #soa[MAX_NUM_ENTITIES]Entity,
+	upper_bound:    int,
+	_free_entities: [dynamic; MAX_NUM_ENTITIES]Entity_Ptr,
+}
+#+end_src
+
+To add to the pool, first a free entity is attempted to be reused, and if not possible - the pool of entities is "extended":
+#+begin_src odin
+entity_pool_add :: proc(p: ^Entity_Pool, v: Entity) -> Entity_Ref {
+	e: Entity_Ptr
+	if len(p._free_entities) > 0 {
+		e = pop(&p._free_entities)
+	} else {
+		assert(p.upper_bound < MAX_NUM_ENTITIES)
+		e = &p.entities[p.upper_bound]
+		p.upper_bound += 1
+	}
+
+	assert(e._gen % 2 == 0)
+	gen := e._gen + 1
+	e^ = v
+	e._gen = gen
+
+	return Entity_Ref{e, e._gen}
+}
+#+end_src
+
+When removing from the pool, the removed entity is added to the array of free entities:
+#+begin_src odin
+entity_pool_remove :: proc(p: ^Entity_Pool, r: Entity_Ref) {
+	if !entity_ref_valid(r) {
+		return
+	}
+
+	assert(r.ptr._gen % 2 == 1)
+	gen := r.ptr._gen + 1
+	r.ptr^ = {}
+	r.ptr._gen = gen
+
+	append(&p._free_entities, r.ptr)
+}
+#+end_src
+
+Iterating over the pool entities needs to take free entities into account (~entity_skip~):
+#+begin_src odin
+for i in 0 ..< pool.upper_bound {
+    e := &pool.entities[i]
+    if entity_skip(e) {
+        continue
+	}
+
+    // do something with the entity
+}
+#+end_src
+
+Here's how working with the hierarchical relationship looks like:
+#+begin_src odin
+// import "core:container/intrusive/list"
+
+inventory := Entity{kind = .Inventory}
+item1 := Entity{kind = .Item}
+item2 := Entity{kind = .Item}
+
+list.push_back(&inventory.group, &item1.group_node)
+list.push_back(&inventory.group, &item2.group_node)
+
+it := list.iterator_head(inventory.group, Entity, "group_node")
+for e in list.iterate_next(&it) {
+    // do something with the entity
+}
+#+end_src
+
+***** Tradeoff of using Odin's intrusive list
+Iterating over the list gives ~Entity~, not ~Entity_Ref~ - so at this point it's impossible to check if the entity is valid (it's possible to check if the entity is still used, but impossible to check if it's still from the same generation or it was already recreated).\\
+Code that modifies entities is required to properly handle the hierarchical relationship (e.g. remove the entity from the intrusive list before invalidating it).
+
+If the intrusive list was implemented using indexes - it'd be possible to have both ~first_child_idx~ and ~next_sibling_idx~ to be a pair of index + generation, and that would allow to check if the entity generation is still the same.
+
+
+**** Entity pool without SoA
+As of now, fixed size dynamic arrays don't support ~#soa~, so a dedicated ~upper_bound~ is needed.\\
+Howevew, if you don't need SoA, you could just make ~entities~ to be fixed size dynamic array:
+#+begin_src odin
+Entity_Pool :: struct {
+	entities:       [dynamic; MAX_NUM_ENTITIES]Entity,
+	_free_entities: [dynamic; MAX_NUM_ENTITIES]Entity_Ptr,
+}
+#+end_src
+
+**** Serialization and deserialization
+Although much more trivial with index-based handles, serialization and deserialization is still manageable with pointer-based handles.\\
+It will be required to calculate the pointer offset and use entity indexes when serializing/deserializing.
+
+**** Implementation gaps
+The demostrated implementation has some gaps to fill before using it for anything serious.\\
+E.g. ~Entity_Gen~ may overflow if entity is recreated many times - ~entity_pool_add~ should properly handle this.
+
+*** Conclusion
+In this post, implementation of Large Array of Things in Odin was showcased.\\
+The implementation uses Odin's ~#soa~ and ~core:container/intrusive/list~, and demonstrates usage of pointer-based handles.
+
+** Doom Emacs setup for Odin :Odin:
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: doom-emacs-odin
+:EXPORT_DATE: 2026-02-08
+:CUSTOM_ID: doom-emacs-odin
+:END:
+
+Doom Emacs, as expected, can be made into great "IDE" for Odin.
+
+This post will cover setting up syntax highlighting, LSP, build command, and debugger.
+
+*** Syntax highlighting
+Odin Tree-sitter mode provides a nice syntax highlighting.
+
+Add the following to ~packages.el~:
+#+begin_src elisp
+;; packages.el
+
+(package! odin-ts-mode
+  :recipe (:host github :repo "Sampie159/odin-ts-mode"))
+#+end_src
+
+And ~config.el~:
+#+begin_src elisp
+;; config.el
+
+(use-package! odin-ts-mode
+  :mode "\\.odin\\'")
+#+end_src
+
+Odin Tree-sitter grammar needs to be installed separately.
+
+Add the following to ~config.el~:
+#+begin_src elisp
+;; config.el
+
+(after! treesit
+  (add-to-list 'treesit-language-source-alist
+               '(odin "https://github.com/tree-sitter-grammars/tree-sitter-odin")))
+#+end_src
+
+Syncronize your config with Doom Emacs (=doom sync=).
+
+Now, run =M-x treesit-install-language-grammar= and select =odin= from the list of grammars.
+
+*** LSP
+Enable LSP support in ~init.el~ (I use Eglot, but LSP-mode also works fine):
+#+begin_src elisp
+;; init.el
+
+(lsp +eglot +peek)
+;; (lsp +peek) ;; LSP-mode
+#+end_src
+
+Doom Emacs should be able to automatically install Odin's LSP server *ols*, but unfortunatelly it doesn't work for me.\\
+I use ols installed from sources:
+1. Clone https://github.com/DanielGavin/ols to ~/opt/ols (you can use any other path, but note that ~/opt/ols is used in this guide)
+2. Follow the build instructions to build both ols and odinfmt
+3. Add ~/opt/ols to $PATH (so that ols and odinfmt can be accessed as just =ols= / =odinfmt=)   
+
+Add hook to start Eglot when openinig Odin file and set up ols:
+#+begin_src elisp
+;; config.el
+
+(add-hook 'odin-ts-mode-hook #'eglot-ensure)
+
+(setq lsp-odin-ols-binary-path "~/opt/ols/ols")
+#+end_src
+
+Syncronize your config with Doom Emacs (=doom sync=).
+
+*** Build command
+While editing any Odin file, it should be possible to easily call =odin build= without switching to terminal.\\
+Emacs provides compile/recompile commands that can be conveniently used for this.
+
+To have a correct compile command (that may include various build options) the compile/recompile commands can work with, set up [[https://github.com/casey/just][Just]] command runner.
+
+Create ~justfile~:
+#+begin_src plain
+# justfile
+
+default: build
+
+build:
+    odin build . -debug -out:out
+#+end_src
+
+And create ~.dir-locals.el~:
+#+begin_src elisp
+;; .dir-locals.el
+
+(
+ (nil . ((eval . (setq-local compile-command "just"))))
+)
+#+end_src
+
+Now, after you open a directory, Emacs will load the directory's ~.dir-locals.el~ and update compile command.\\
+It'll be possible to build the project using =SPC c c= / =SPC c C= from any Odin file (including from subdirectories).
+
+**** Shell script instead of Just
+If you don't want to use Just - you can create a simple ~build.sh~:
+#+begin_src shell
+#!/bin/sh
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd) || exit 1
+cd "$SCRIPT_DIR" || exit 1
+
+odin build . -debug -out:out
+#+end_src
+
+And then ~.dir-locals.el~:
+#+begin_src elisp
+;; .dir-locals.el
+
+(
+ (nil . ((eval . (setq-local compile-command
+                             (concat (locate-dominating-file
+                                      default-directory ".dir-locals.el") "build.sh")))))
+)
+#+end_src
+
+However, Just is convenient as you'll likely need more commands for your development purposes anyways.
+
+*** Debugger
+Install latest llvm and make sure =lldb-dap= is accessible.
+
+Also, enable =debugger= in ~init.el~:
+#+begin_src elisp
+;; init.el
+
+:tools
+debugger
+#+end_src
+
+Modify ~.dir-locals.el~ added in the previos section:
+#+begin_src elisp
+;; .dir-locals.el
+
+(
+  (nil . ((eval . (setq-local compile-command "just"))))
+  (odin-ts-mode
+  . ((eval
+      . (let ((project-root
+               (expand-file-name
+                (file-name-as-directory
+                 (file-name-directory
+                  (locate-dominating-file
+                   default-directory ".dir-locals.el"))))))
+          (add-to-list
+           'dape-configs
+           `(odin-debug
+             modes (odin-ts-mode)
+             ensure dape-ensure-command
+             command "lldb-dap"
+             command-cwd dape-cwd-fn
+             :type "lldb"
+             :request "launch"
+             :name "Odin Debug"
+             :program ,(concat project-root "out")
+             :cwd ,project-root
+             :args []
+             :stopOnEntry nil
+             ;; :preRunCommands [,(concat "command script import " (expand-file-name "~/") "opt/odin-lldb/odin_lldb.py")]
+             ))))))
+
+)
+#+end_src
+
+Reopen any Odin file so that Emacs reloads ~.dir-locals.el~.
+
+Now, you can use debugger: add some breakpoints and run debugger (=SPC d d=).\\
+You should see "Run adapter: odin-debug", select it and wait for your breakpoints being hit.
+
+**** LLDB formatters
+:PROPERTIES:
+:CUSTOM_ID: lldb-formatters
+:END:
+
+By default, lldb doesn't know how to format Odin's types (strings, slices etc.).
+
+Notice the commented out line in ~.dir-locals.el~ above:
+#+begin_src elisp
+;; :preRunCommands [,(concat "command script import " (expand-file-name "~/") "opt/odin-lldb/odin_lldb.py")]
+#+end_src
+
+It's possible to extend lldb to format Odin's types properly.\\
+Uncomment the line and add ~/opt/odin-lldb/odin_lldb.py:
+#+begin_src python
+# odin_lldb.py
+
+import lldb
+
+
+class OdinSliceSyntheticProvider:
+    def __init__(self, valobj, internal_dict):
+        self.valobj = valobj
+        self._data_ptr = None
+        self._length = 0
+        self._element_type = None
+        self._element_size = 0
+
+    def num_children(self):
+        return self._length
+
+    def get_child_index(self, name):
+        try:
+            return int(name.lstrip("[").rstrip("]"))
+        except ValueError:
+            return -1
+
+    def get_child_at_index(self, index):
+        if index < 0 or index >= self._length:
+            return None
+        if self._data_ptr is None or self._element_type is None:
+            return None
+
+        offset = index * self._element_size
+        addr = self._data_ptr + offset
+        return self.valobj.CreateValueFromAddress(
+            f"[{index}]", addr, self._element_type
+        )
+
+    def update(self):
+        self._data_ptr = None
+        self._length = 0
+        self._element_type = None
+        self._element_size = 0
+
+        try:
+            data = self.valobj.GetChildMemberWithName("data")
+            length = self.valobj.GetChildMemberWithName("len")
+
+            if not data.IsValid() or not length.IsValid():
+                return
+
+            self._length = length.GetValueAsUnsigned(0)
+            self._data_ptr = data.GetValueAsUnsigned(0)
+
+            if self._data_ptr == 0:
+                self._length = 0
+                return
+
+            ptr_type = data.GetType()
+            if ptr_type.IsPointerType():
+                self._element_type = ptr_type.GetPointeeType()
+                self._element_size = self._element_type.GetByteSize()
+
+            # cap the number of children to avoid performance issues
+            self._length = min(self._length, 1000)
+
+        except Exception:
+            pass
+
+    def has_children(self):
+        return self._length > 0
+
+
+class OdinDynamicArraySyntheticProvider(OdinSliceSyntheticProvider):
+    pass
+
+
+def odin_string_summary(valobj, internal_dict):
+    try:
+        data = valobj.GetChildMemberWithName("data")
+        length = valobj.GetChildMemberWithName("len")
+
+        if not data.IsValid() or not length.IsValid():
+            return None
+
+        len_val = length.GetValueAsUnsigned(0)
+        if len_val == 0:
+            return '""'
+
+        # limit display length
+        display_len = min(len_val, 256)
+
+        data_addr = data.GetValueAsUnsigned(0)
+        if data_addr == 0:
+            return "<nil>"
+
+        error = lldb.SBError()
+        process = valobj.GetProcess()
+        content = process.ReadMemory(data_addr, display_len, error)
+
+        if error.Fail():
+            return None
+
+        try:
+            text = content.decode("utf-8", errors="replace")
+        except Exception:
+            text = repr(content)
+
+        if len_val > display_len:
+            return f'"{text}..." (len={len_val})'
+        return f'"{text}"'
+
+    except Exception:
+        return None
+
+
+def odin_slice_summary(valobj, internal_dict):
+    try:
+        valobj = valobj.GetNonSyntheticValue()
+        data = valobj.GetChildMemberWithName("data")
+        length = valobj.GetChildMemberWithName("len")
+
+        if not data.IsValid() or not length.IsValid():
+            return None
+
+        len_val = length.GetValueAsUnsigned(0)
+        data_addr = data.GetValueAsUnsigned(0)
+
+        if data_addr == 0 and len_val == 0:
+            return "[] (len=0)"
+        if data_addr == 0:
+            return f"<nil> (len={len_val})"
+
+        return f"len={len_val}"
+
+    except Exception:
+        return None
+
+
+def odin_dynamic_array_summary(valobj, internal_dict):
+    try:
+        valobj = valobj.GetNonSyntheticValue()
+        data = valobj.GetChildMemberWithName("data")
+        length = valobj.GetChildMemberWithName("len")
+        cap = valobj.GetChildMemberWithName("cap")
+
+        if not data.IsValid() or not length.IsValid():
+            return None
+
+        len_val = length.GetValueAsUnsigned(0)
+        cap_val = cap.GetValueAsUnsigned(0) if cap.IsValid() else 0
+        data_addr = data.GetValueAsUnsigned(0)
+
+        if data_addr == 0 and len_val == 0:
+            return f"[] (len=0, cap={cap_val})"
+        if data_addr == 0:
+            return f"<nil> (len={len_val}, cap={cap_val})"
+
+        return f"len={len_val}, cap={cap_val}"
+
+    except Exception:
+        return None
+
+
+def __lldb_init_module(debugger, internal_dict):
+    debugger.HandleCommand(
+        'type summary add -F odin_lldb.odin_string_summary "string" -w odin'
+    )
+
+    debugger.HandleCommand(
+        'type summary add -x "^\\[\\].+" -F odin_lldb.odin_slice_summary -w odin'
+    )
+    debugger.HandleCommand(
+        'type synthetic add -x "^\\[\\].+" -l odin_lldb.OdinSliceSyntheticProvider -w odin'
+    )
+
+    debugger.HandleCommand(
+        'type summary add -x "^\\[dynamic\\].+" -F odin_lldb.odin_dynamic_array_summary -w odin'
+    )
+    debugger.HandleCommand(
+        'type synthetic add -x "^\\[dynamic\\].+" -l odin_lldb.OdinDynamicArraySyntheticProvider -w odin'
+    )
+
+    debugger.HandleCommand("type category enable odin")
+
+    print("Odin LLDB formatters loaded.")
+#+end_src
+
+It will extend lldb to properly format strings, dynamic arrays and slices (more types can be added e.g. maps etc.).\\
+For example, in the debugger you will see:
+#+begin_src plain
++ some_string "some_string" string
+- some_array len=3, cap=8 [dynamic]string
+  + [0] "one" string
+  + [1] "two" string
+  + [2] "three" string
+- some_slice len=2 []string
+  + [0] "one" string
+  + [1] "two" string
+#+end_src
+
+instead of
+
+#+begin_src plain
+- some_string string @ 0x16fdfe140 string
+  + data 0x0000000100127ef4 "some_string" u8 *
+    len 11 int
+- some_array [dynamic]string @ 0x16fdfe0e0 [dynamic]string
+  - data 0x0000000100c52068 string *
+    + data 0x0000000100127f00 "one" u8 *
+      len 3 int
+    len 3 int
+    cap 8 int
+  + allocator runtime::Allocator @ 0x16fdfe0f8 runtime::Allocator
+- some_slice []string @ 0x16fdfe050 []string
+  - data 0x0000000100c52068 string *
+    + data 0x0000000100127f00 "one" u8 *
+      len 3 int
+    len 2 int
+#+end_src
+
+The summaries (the most top level rows) are much more useful, and arrays/slices have all the elements displayed instead of just the first one.
+
+*** Conclusion
+Doom Emacs can be made into nice "IDE" for Odin.
+
+There're several rough edges, but the ecosystem should mature with time, and the setup process should be easier and more out-of-the-box than it is now.\\
+However, even now the setup process isn't too complicated, and it's a one time effort to get pretty great experience.
+
+** Making user-facing DSL with goyacc :Go:
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: dsl-goyacc
+:EXPORT_DATE: 2026-02-02
+:END:
+
+One of the core features of my [[https://github.com/cephei8/greener][Greener]] project is user-facing DSL for querying database with test results.\\
+For example, =status = "fail" AND name = "login_test"= fetches results of the "login_test" test that failed.
+
+Surprisingly, Go's port of classic YACC parser generator was a relatively simple and straightforward way to parse user queries to further convert them in SQL queries.
+
+Note: this post covers a very simplified approach for educational purposes.
+
+*** Goal
+The goal is to turn this:
+#+begin_src
+status = "fail" AND name = "login_test"
+#+end_src
+
+Into this:
+#+begin_src sql
+SELECT * FROM testcases WHERE status = 'fail' AND name = 'login_test'
+#+end_src
+
+The workflow consists of:
+1. Tokenizing query string
+2. Parsing tokens into abstract syntax tree (AST)
+3. Generating SQL from AST
+
+However, the the problem will be approached in a slightly different order:
+1. Define AST
+2. Write goyacc grammar
+3. Implement lexer (tokenizer)
+4. Generate parser using goyacc
+5. Generate SQL from AST
+
+*** Implementation 
+**** Define AST
+The AST represents the structure of the parsed query.\\
+For out simple DSL we need just several types:
+
+#+begin_src go
+type Query struct {
+	Condition Condition
+}
+
+type Condition any
+
+type FieldCondition struct {
+	Field string
+	Value string
+}
+
+type AndCondition struct {
+	Left  Condition
+	Right Condition
+}
+#+end_src
+
+=FieldCondition= represents =field = "value"=.\\
+=AndCondition= combines two conditions with =AND=.\\
+=Condition= is either =FieldCondition= or =AndCondition= (unfortunately Go doesn't have sum types; we could make it an interface, but for the sake of this example =any= would also work fine).
+
+For example, =status = "fail" AND name = "login_test"= becomes:
+#+begin_src
+           AndCondition
+              /     \
+  FieldCondition    FieldCondition
+  (status="fail")   (name="login_test")
+#+end_src
+
+**** Write goyacc grammar
+The grammar defines what valid queries look like:
+#+begin_src text
+%{
+package main
+%}
+
+%union {
+    str       string
+    condition Condition
+}
+
+%token <str> tokIDENT tokSTRING
+%token tokAND tokEQ
+
+%type <condition> query condition term
+
+%left tokAND
+
+%%
+
+query:
+    condition
+    {
+        yylex.(*lexer).result = &Query{Condition: $1}
+    }
+
+condition:
+    condition tokAND term
+    {
+        $$ = &AndCondition{Left: $1, Right: $3}
+    }
+    | term
+    {
+        $$ = $1
+    }
+
+term:
+    tokIDENT tokEQ tokSTRING
+    {
+        $$ = &FieldCondition{Field: $1, Value: $3}
+    }
+
+%%
+#+end_src
+
+To break it down:
+- =%union= defines what data types tokens and rules can carry. =str= is a string value, =condition= is AST node.
+- =%token= declares terminal symbols (tokens from the lexer). =<str>= means these tokens carry strings.
+- =%type= declares what type each grammar rule produces.
+- =%left tokAND= sets AND as left-associative (=a AND b AND c= groups as =(a AND b) AND c=).
+- The =%%...%%=  section contains the grammar rules. Each rule has a pattern and Go code in braces that builds AST nodes.
+  - =$1=, =$3= refer to matched elements by position, =$$= is the rule's output.
+
+**** Implement lexer (tokenizer)
+
+The lexer breaks input into tokens.\\
+It must implement the following interface:
+#+begin_src go
+type yyLexer interface {
+	Lex(lval *yySymType) int
+	Error(s string)
+}
+#+end_src
+
+Simple lexer can look like the following:
+#+begin_src go
+type lexer struct {
+	input  string
+	pos    int
+	result *Query
+	err    error
+}
+
+func newLexer(input string) *lexer {
+	return &lexer{input: input}
+}
+
+func (l *lexer) Lex(lval *yySymType) int {
+	for l.pos < len(l.input) && (l.input[l.pos] == ' ' || l.input[l.pos] == '\t') {
+		l.pos++
+	}
+
+	if l.pos >= len(l.input) {
+		return 0 // EOF
+	}
+
+	if l.input[l.pos] == '=' {
+		l.pos++
+		return tokEQ
+	}
+
+	if l.input[l.pos] == '"' {
+		l.pos++ // skip opening quote
+		start := l.pos
+		for l.pos < len(l.input) && l.input[l.pos] != '"' {
+			l.pos++
+		}
+		lval.str = l.input[start:l.pos]
+		l.pos++ // skip closing quote
+		return tokSTRING
+	}
+
+	isAlpha := func(c byte) bool {
+		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+	}
+
+	if isAlpha(l.input[l.pos]) {
+		start := l.pos
+		for l.pos < len(l.input) && (isAlpha(l.input[l.pos]) || l.input[l.pos] == '_') {
+			l.pos++
+		}
+		word := l.input[start:l.pos]
+
+		if strings.ToUpper(word) == "AND" {
+			return tokAND
+		}
+		lval.str = word
+		return tokIDENT
+	}
+
+	l.pos++
+	return 0
+}
+
+func (l *lexer) Error(s string) {
+	l.err = fmt.Errorf("parse error: %s", s)
+}
+#+end_src
+
+The lexer recognizes tokens defined in the grammar.\\
+If a token carries data (string), it is stored in =lval.str=.
+
+**** Generate parser using goyacc
+Run =goyacc= to generate the parser (the grammar was stored in =query.y=):
+#+begin_src sh
+goyacc -o parser.go query.y
+#+end_src
+
+For convenience, =Parse= function can be defined to call =yyParse= from the generated parser:
+#+begin_src go
+func Parse(input string) (*Query, error) {
+	l := newLexer(input)
+	yyParse(l)
+	if l.err != nil {
+		return nil, l.err
+	}
+	return l.result, nil
+}
+#+end_src
+
+**** Generate SQL from AST
+
+Finally, traverse the AST to build SQL:
+#+begin_src go
+func BuildSQL(q *Query, table string) (string, []any) {
+	whereClause, args := toSQL(q.Condition)
+	return fmt.Sprintf("SELECT * FROM %s WHERE %s", table, whereClause), args
+}
+
+func toSQL(c Condition) (string, []any) {
+	switch v := c.(type) {
+	case *FieldCondition:
+		return fmt.Sprintf("%s = ?", v.Field), []any{v.Value}
+	case *AndCondition:
+		leftSQL, leftArgs := toSQL(v.Left)
+		rightSQL, rightArgs := toSQL(v.Right)
+		return fmt.Sprintf("(%s AND %s)", leftSQL, rightSQL), append(leftArgs, rightArgs...)
+	default:
+		return "", nil
+	}
+}
+#+end_src
+
+Putting it all together:
+#+begin_src go
+query, _ := Parse(`status = "fail" AND name = "login_test"`)
+sql, args := BuildSQL(query, "testcases")
+// sql:  "SELECT * FROM testcases WHERE (status = ? AND name = ?)"
+// args: ["fail", "login_test"]
+#+end_src
+
+*** Conclusion
+Goyacc is likely sufficient for typical parsing needs. It is relatively easy to use, and (importantly) comes as a "standard" tool in Go ecosystem.
+
+In several hundreds lines of code it is possible to implemeted simple DSL for querying database data.\\
+Although for such a simple task it is likely and overkill, the solution scales well for more complicated queries (see [[https://github.com/cephei8/greener][Greener]] codebase for more complex DSL implementation).
+
+** Go's Bun ORM - alternative to Python's SQLAlchemy :Go:
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: bun-sqlalchemy-alternative
+:EXPORT_DATE: 2026-01-02
+:END:
+
+Initially, my [[https://github.com/cephei8/greener][Greener]] project was implemented in Python.\\
+When I decided to switch to Go, I started looking for Go ORM library.
+In Python the de facto standard is [[https://www.sqlalchemy.org][SQLAlchemy]].
+I liked SQLAlchemy and was hoping to find something similar for Go.
+
+Specifically, I was looking for the following:
+1. Actively maintained
+2. Support for different databases (in the sense that same code works with different databases)
+3. ORM layer (for simple queries)
+4. SQL eDSL (for complex queries)
+5. Support for dynamic queries (e.g. variable set of query conditions etc.)
+6. Migration system
+
+I settled on [[https://bun.uptrace.dev][Bun]] - while not being as ergonomic as SQLAlchemy
+(not Bun's fault, I think it's done a great job given the programming language)
+and not ticking all the boxes, it still covered the most important parts.
+
+*** Support for different databases
+The databases I wanted were SQLite, PostgreSQL and MySQL.\\
+Bun supports all of them (and more), so I didn't look any further.
+
+*** ORM layer
+Defining models and using them for queries is simple and straightforward.
+
+The following code examples demonstrate common operations in Python's SQLAlchemy and Go's Bun.
+
+**** Code examples
+***** Defining models
+Python:
+#+begin_src python
+class APIKey(Base):
+    __tablename__ = "apikeys"
+
+    id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
+    description: Mapped[str | None] = mapped_column(Text)
+    secret_salt: Mapped[bytes]
+    secret_hash: Mapped[bytes]
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTimeUTC(timezone=True),
+        default=lambda: datetime.datetime.now(datetime.timezone.utc),
+    )
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    user: Mapped[User] = relationship(lazy="noload")
+#+end_src
+
+Go:
+#+begin_src go
+type APIKey struct {
+	bun.BaseModel `bun:"table:apikeys"`
+
+	ID          BinaryUUID `bun:"id,notnull"`
+	Description *string    `bun:"description"`
+	SecretSalt  []byte     `bun:"secret_salt,notnull"`
+	SecretHash  []byte     `bun:"secret_hash,notnull"`
+	CreatedAt   time.Time  `bun:"created_at,nullzero,notnull"`
+	UserID      BinaryUUID `bun:"user_id,notnull"`
+}
+#+end_src
+
+***** Inserting data
+Python:
+#+begin_src python
+api_key = APIKey(
+    description="My API key",
+    secret_salt=password_salt,
+    secret_hash=password_hash,
+    user_id=user.id,
+)
+
+async_session_maker = async_sessionmaker(bind=db_engine)
+async with async_session_maker() as db_session:
+    db_session.add(api_key)
+    await db_session.commit()
+#+end_src
+
+Go:
+#+begin_src go
+apiKey := &APIKey{
+	ID:          BinaryUUID(uuid.New()),
+    Description: description,
+	SecretSalt:  salt,
+	SecretHash:  secretHash,
+	CreatedAt:   time.Now(),
+	UserID:      BinaryUUID(userId),
+}
+
+_, err := db.NewInsert().Model(apiKey).Exec(ctx)
+if err != nil {
+    return err
+}
+#+end_src
+
+***** Fetching data
+Python:
+#+begin_src python
+async_session_maker = async_sessionmaker(bind=db_engine)
+async with async_session_maker() as db_session:
+    stmt = (
+        select(APIKey)
+        .where(APIKey.user_id == user_id)
+        .order_by(desc(APIKey.created_at))
+    )
+    result = await db_session.execute(stmt)
+    api_keys = result.scalars().all()
+#+end_src
+
+Go:
+#+begin_src go
+var apiKeys []APIKey
+
+err := db.NewSelect().
+	Model(&apiKeys).
+	Where("? = ?", bun.Ident("user_id"), BinaryUUID(userId)).
+	OrderBy("created_at", bun.OrderDesc).
+	Scan(ctx)
+
+if err != nil {
+    return err
+}
+#+end_src
+
+**** Mapping types to database types
+Notice that my Go code uses `BinaryUUID` - it's needed to map UUID to binary on SQLite and MySQL.
+It can be implemented as follows (`Dialect` must be set beforehand e.g. on program start):
+
+Go:
+#+begin_src go
+var Dialect schema.Dialect
+
+type BinaryUUID uuid.UUID
+
+func (u *BinaryUUID) Scan(value any) error {
+	if value == nil {
+		return fmt.Errorf("cannot scan nil into BinaryUUID")
+	}
+
+	switch Dialect.(type) {
+	case *pgdialect.Dialect:
+		switch v := value.(type) {
+		case string:
+			parsed, err := uuid.Parse(v)
+			if err != nil {
+				return fmt.Errorf("failed to parse UUID string: %w", err)
+			}
+			*u = BinaryUUID(parsed)
+			return nil
+		case []byte:
+			parsed, err := uuid.ParseBytes(v)
+			if err != nil {
+				return fmt.Errorf("failed to parse UUID bytes: %w", err)
+			}
+			*u = BinaryUUID(parsed)
+			return nil
+		default:
+			return fmt.Errorf("unsupported type for PostgreSQL UUID: %T", value)
+		}
+	case *mysqldialect.Dialect, *sqlitedialect.Dialect:
+		bytes, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("expected []byte for MySQL/SQLite UUID, got %T", value)
+		}
+		if len(bytes) != 16 {
+			return fmt.Errorf("expected 16 bytes for UUID, got %d", len(bytes))
+		}
+		parsed, err := uuid.FromBytes(bytes)
+		if err != nil {
+			return fmt.Errorf("failed to parse UUID from bytes: %w", err)
+		}
+		*u = BinaryUUID(parsed)
+		return nil
+	default:
+		return fmt.Errorf("unknown dialect type: %T", Dialect)
+	}
+}
+
+func (u BinaryUUID) Value() (driver.Value, error) {
+	id := uuid.UUID(u)
+
+	switch Dialect.(type) {
+	case *pgdialect.Dialect:
+		return id.String(), nil
+	case *mysqldialect.Dialect, *sqlitedialect.Dialect:
+		bytes, err := id.MarshalBinary()
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal UUID to binary: %w", err)
+		}
+		return bytes, nil
+	default:
+		return nil, fmt.Errorf("unknown dialect type: %T", Dialect)
+	}
+}
+
+func (u BinaryUUID) String() string {
+	return uuid.UUID(u).String()
+}
+
+func (u BinaryUUID) UUID() uuid.UUID {
+	return uuid.UUID(u)
+}
+#+end_src
+
+SQLAlchemy also allows customizations, but I changed the UUID mapping to binary after the Go rewrite,
+so I don't have a hands-on example in Python.
+
+
+
+*** SQL eDSL
+Greener supports query language that lets users do filtering and grouping.\\
+That means that the underlying SQL query will have variable set of conditions and variable set of columns to group by.
+
+The queries that I needed to implement were not particularly complex, but they also needed the following:
+- CTEs (Common Table Expressions)
+- Window functions
+
+
+The following code snippets demonstrate building such a dynamic query in SQLAlchemy vs Bun.\\
+Although the Go version may be slightly different than the Python version, the code snippets show how each framework "feels".
+
+Python:
+#+begin_src python
+select_columns = [
+    c.label(la) for c, la in zip(group_columns, group_column_labels)
+]
+cte_query = select(
+    *select_columns, func.min(Testcase.status).label("aggregated_status")
+).select_from(Testcase)
+
+for token, tbl in zip(query_ast.group_by.tokens, group_tables):
+    match token.token_type:
+        case GroupByTokenType.SESSION_ID:
+            cte_query = cte_query.join(tbl, Testcase.session_id == tbl.id)
+        case GroupByTokenType.TAG:
+            cte_query = cte_query.join(
+                tbl,
+                and_(
+                    Testcase.session_id == tbl.session_id,
+                    tbl.key == token.value,
+                ),
+            )
+        case _:
+            assert_never(token.token_type)
+
+cte_query = (
+    cte_query.where(and_(Testcase.user_id == request.user.id))
+    .group_by(*group_columns)
+    .order_by(*group_columns)
+)
+
+where_cond = build_query_conditions(query_ast.main_query)
+if where_cond is not None:
+    cte_query = cte_query.where(where_cond)
+
+cte = cte_query.cte("cte")
+query = (
+    select(
+        cte,
+        func.count(1).over().label("total_count"),
+    )
+    .select_from(cte)
+    .offset(offset)
+    .limit(limit)
+)
+#+end_src
+
+Go:
+#+begin_src go
+groupCols := []string{}
+orderCols := []string{}
+
+cteQuery := db.NewSelect().Table(fmt.Sprintf("%s", testcasesTable))
+
+labelJoinIdx := 0
+for _, token := range groupBy.Tokens {
+	switch t := token.(type) {
+	case query.SessionGroupToken:
+		idCol := fmt.Sprintf("%s.id", sessionsTable)
+		cteQuery = cteQuery.ColumnExpr(
+			"? AS ?", bun.Ident(idCol),
+			bun.Ident("session_id"),
+		)
+		groupCols = append(groupCols, idCol)
+		orderCols = append(orderCols, idCol)
+
+	case query.TagGroupToken:
+		alias := fmt.Sprintf("l%d", labelJoinIdx)
+		valCol := fmt.Sprintf("%s.value", alias)
+		cteQuery = cteQuery.ColumnExpr(
+			"? AS ?",
+			bun.Ident(valCol),
+			bun.Ident(fmt.Sprintf("\"%s\"", t.Tag)),
+		)
+		groupCols = append(groupCols, valCol)
+		orderCols = append(orderCols, valCol)
+		labelJoinIdx++
+	}
+}
+
+cteQuery = cteQuery.ColumnExpr(
+	"MIN(?) AS ?",
+	bun.Ident(fmt.Sprintf("%s.status", testcasesTable)),
+	bun.Ident("aggregated_status"),
+)
+cteQuery = cteQuery.ColumnExpr(
+	"COUNT(DISTINCT ?) AS ?",
+	bun.Ident(fmt.Sprintf("%s.id", testcasesTable)),
+	bun.Ident("testcase_count"),
+)
+
+labelJoinIdx = 0
+for _, token := range groupBy.Tokens {
+	switch t := token.(type) {
+	case query.SessionGroupToken:
+		cteQuery = cteQuery.Join(
+			"JOIN ? ON ? = ?",
+			bun.Ident(fmt.Sprintf("%s", sessionsTable)),
+			bun.Ident(fmt.Sprintf("%s.session_id", testcasesTable)),
+			bun.Ident(fmt.Sprintf("%s.id", sessionsTable)),
+		)
+
+	case query.TagGroupToken:
+		alias := fmt.Sprintf("l%d", labelJoinIdx)
+		cteQuery = cteQuery.Join(
+			"JOIN ? AS ? ON ? = ? AND ? = ?",
+			bun.Ident(fmt.Sprintf("%s", labelsTable)),
+			bun.Ident(alias),
+			bun.Ident(fmt.Sprintf("%s.session_id", testcasesTable)),
+			bun.Ident(fmt.Sprintf("%s.session_id", alias)),
+			bun.Ident(fmt.Sprintf("%s.key", alias)),
+			t.Tag,
+		)
+		labelJoinIdx++
+	}
+}
+
+cteQuery = cteQuery.Where(
+	"? = ?",
+	bun.Ident(fmt.Sprintf("%s.user_id", testcasesTable)),
+	userID,
+)
+cteQuery = applySelectQuery(cteQuery, queryAST.SelectQuery)
+
+for _, col := range groupCols {
+	cteQuery = cteQuery.Group(col)
+}
+for _, col := range orderCols {
+	cteQuery = cteQuery.Order(col)
+}
+
+mainQuery := db.NewSelect().
+	Table("cte").
+	Column("*").
+	ColumnExpr("COUNT(?) OVER() AS ?", 1, bun.Ident("total_count")).
+	With("cte", cteQuery)
+
+mainQuery, err := applyOffsetLimit(mainQuery, queryAST)
+if err != nil {
+	return nil, err
+}
+#+end_src
+
+Overall, Bun's eDSL is capable enough for more complex queries.
+
+*** Migration system
+SQLAlchemy together with [[https://alembic.sqlalchemy.org][Alembic]] make a great database migration tool.\\
+It provides many features (Alembic's goals are stated in its [[https://github.com/sqlalchemy/alembic][GitHub repository]]),
+but the main one for me was the eDSL to have a single migration work with different databases.
+
+Unfortunately, Bun doesn't help here.\\
+There's eDSL, but it's required to write database-specific code (e.g. for database-specific types),
+whereas in Alembic you work with SQLAlchemy types, which then are automatically mapped to database types.
+
+I ended up using [[https://github.com/amacneil/dbmate][Dbmate]] with raw SQL migrations for each supported database.\\
+It's possible to do migrations in Bun, but for my use case there're no benefits using it comparing to raw SQL.
+
+*** Conclusion
+Bun is a solid choice for a Go ORM with SQL eDSL support.
+
+It supports SQLite, PostreSQL, MySQL and more.\\
+ORM layer is easy to use, and eDSL can be used for more complex queries (supporting subqueries, CTEs, window functions).\\
+The same application code (ORM layer or eDSL) can be used with different databases (e.g. depending on the database provided in runtime).
+
+** Greener: lean and mean test result explorer
+:PROPERTIES:
+:EXPORT_HUGO_SECTION: blog
+:EXPORT_FILE_NAME: introducing-greener
+:EXPORT_DATE: 2025-11-25
+:END:
+
+Test frameworks usually produce custom test output by default (along with exit code).\\
+For example, pytest (test framework for Python) gives something like this:
+#+begin_src
+tests/test_apikey_controller.py::test_create[db_sqlite] PASSED        [ 25%]
+tests/test_apikey_controller.py::test_get[db_sqlite] PASSED           [ 50%]
+tests/test_apikey_controller.py::test_list[db_sqlite] PASSED          [ 75%]
+tests/test_apikey_controller.py::test_delete[db_sqlite] PASSED        [100%]
+#+end_src
+
+This is fine if a number of tests is small, or we mostly care about overall test result - if all the tests in the test session passed.
+
+However, once we need to investigate test failure, especially for larger/longer test sessions (e.g. end-to-end tests), often the following questions need answers:
+- What are the other tests that failed? Did they fail because of the same reason?
+- How did this test behave over time? Is it flaky?
+- How to match applications logs with specific tests?
+
+It may be hard or not possible to answer these questions without additional infrastructure/tools.\\
+Normally, the following comes to help:
+- Export test results as JUnit XML and visualize the test results in the CI system being used (Jenkins, Azure DevOps etc.)
+- Export test results as JUnit XML, process and store them in database, and use Redash/Grafana for visualization
+- Instrument test framework to log additional details (e.g. start/end time), and then use the test log in addition to test results
+- Build ad-hoc solution that incorporates the previous points, and adds more convenience e.g. by adding each search for tests etc.
+
+The problem is that these additional infrastructure/tools require implementation, setup and maintenance, and that takes resources/focus from doing work that brings the actual value (like building a product).
+
+*** Introducing Greener
+[[https://github.com/cephei8/greener][Greener]] is a platform for storing and viewing test results.
+
+It strives to:
+- Be a simple and focused tool
+- Be easy to integrate
+    - The platform is hosted as a Docker container that works with SQLite/PostgreSQL/MySQL
+    - Test framework plugins don't require code changes
+- Require "zero" setup and work out of the box
+- No "lock in" - switch to some other solution at any time (simply disable test framework plugins)
+- Enable further automation and/or advanced use cases via API
+- Bring simple but powerful query language
+   - Find specific tests by certain properties (name, session, custom labels)
+   - Group results
+- Enable adding custom metadata to test sessions and test cases (labels, arbitrary JSON)
+
+*** Motivational examples
+**** Track a subset of tests
+You can prepare a query to select a certain subset of tests and group the results by session.\\
+In this case you will be able to see how this specific subset of tests behaved over time.\\
+Additionally, group by label e.g. "target" label in case cross-platform builds.
+
+**** Match application logs to test results
+This example requires code changes, but it is can be powerful for end-to-end tests.\\
+The idea is to create OpenTelemetry trace context, and both store it in test case metadata and pass with requests to your API.\\
+It will allow finding traces for specific test cases and finding a test case for specific trace.

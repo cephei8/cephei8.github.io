@@ -1,0 +1,25 @@
+baseURL = "https://cephei8.dev/"
+languageCode = "en-us"
+title = "cephei8's site"
+author = "cephei8"
+
+[module]
+  [[module.imports]]
+    path = "github.com/janraasch/hugo-bearblog"
+
+theme = "hugo-bearblog"
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[params]
+  hideMadeWithLine = true
+
+[[menu.main]]
+  name = "RSS"
+  url = "/blog/index.xml"
+  weight = 1003.5
+
+[caches]
+  [caches.images]
+    dir = ':cacheDir/images'
