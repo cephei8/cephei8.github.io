@@ -22,7 +22,7 @@ theme = "hugo-bearblog"
 
 [[menu.main]]
   name = "Git"
-  url = "https://git.cephei8.dev/"
+  url = "https://github.com/cephei8"
   weight = 1004
 
 [caches]
