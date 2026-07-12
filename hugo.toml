@@ -20,6 +20,11 @@ theme = "hugo-bearblog"
   url = "/blog/index.xml"
   weight = 1003.5
 
+[[menu.main]]
+  name = "Git"
+  url = "https://git.cephei8.dev/"
+  weight = 1004
+
 [caches]
   [caches.images]
     dir = ':cacheDir/images'
