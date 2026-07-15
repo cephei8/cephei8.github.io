@@ -3,7 +3,7 @@ title = "Contact"
 draft = false
 [menu]
   [menu.main]
-    weight = 1003
+    weight = 1002
     identifier = "contact"
 +++
 

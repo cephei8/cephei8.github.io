@@ -3,7 +3,7 @@ title = "About this site"
 draft = false
 [menu]
   [menu.main]
-    weight = 1004
+    weight = 1003
     identifier = "about-this-site"
 +++
 
