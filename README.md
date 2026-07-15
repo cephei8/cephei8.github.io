@@ -1,0 +1,5 @@
+# cephei8's site
+
+## License
+Content of the website is licensed under CC BY 4.0, the rest is licensed under MIT.<br/>
+See [./LICENSE](./LICENSE) for details.
