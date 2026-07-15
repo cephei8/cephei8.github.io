@@ -2,6 +2,16 @@
 #+author: cephei8
 #+options: author:nil
 
+* Home
+:PROPERTIES:
+:EXPORT_HUGO_MENU: :menu main
+:EXPORT_HUGO_SECTION: /
+:EXPORT_FILE_NAME: _index
+:END:
+
+** My projects
+Check out my GitHub page: [[https://github.com/cephei8]]
+
 * Blog
 :PROPERTIES:
 :EXPORT_HUGO_MENU: :menu main

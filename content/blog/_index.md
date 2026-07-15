@@ -3,6 +3,6 @@ title = "Blog"
 draft = false
 [menu]
   [menu.main]
-    weight = 1001
+    weight = 1002
     identifier = "blog"
 +++
